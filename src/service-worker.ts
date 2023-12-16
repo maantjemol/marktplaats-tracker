@@ -34,9 +34,10 @@ worker.addEventListener('activate', (event) => {
 });
 
 worker.addEventListener('push', (event) => {
+	if (!event.data) return;
 	event.waitUntil(
-		worker.registration.showNotification('Hi', {
-			body: 'We found a notification!'
+		worker.registration.showNotification('HI!', {
+			body: event.data.text() ?? 'Hello world'
 		})
 	);
 });

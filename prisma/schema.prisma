@@ -1,0 +1,24 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model marktplaats_queries {
+  id                Int               @id @default(autoincrement())
+  user_id           Int
+  query             String
+  created_at        DateTime          @default(now()) @db.Timestamp(6)
+  marktplaats_users marktplaats_users @relation(fields: [user_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+}
+
+model marktplaats_users {
+  id                  Int                   @id @default(autoincrement())
+  name                String                @db.VarChar(255)
+  created_at          DateTime              @default(now()) @db.Timestamp(6)
+  subscription        Json                  @db.Json
+  marktplaats_queries marktplaats_queries[]
+}

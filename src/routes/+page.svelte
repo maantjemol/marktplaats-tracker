@@ -3,6 +3,48 @@
   import { dev } from '$app/environment';
 
   let PushSubscription:PushSubscriptionJSON | null = null;
+  let username = "";
+
+  // Create user
+  const createUser = async () => {
+    if (PushSubscription && PushSubscription.keys) {
+      if (!username) {
+        alert("Please enter a username");
+        return;
+      }
+      if (username.length > 20) {
+        alert("Username must be less than 20 characters");
+        return;
+      }
+      if (username.length < 3) {
+        alert("Username must be more than 3 characters");
+        return;
+      }
+      if (!username.match(/^[a-zA-Z0-9]+$/)) {
+        alert("Username must only contain letters and numbers");
+        return;
+      }
+      const res = await fetch("/api/user", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({
+          name: username,
+          subscription: {
+            endpoint: PushSubscription.endpoint,
+            keys: {
+              auth: PushSubscription.keys.auth,
+              p256dh: PushSubscription.keys.p256dh
+            }
+          }
+         })
+      });
+      console.log(await res.json());
+    } else {
+      alert("Please allow notifications to make sure that the application works.");
+    }
+  }
 
   // Register service worker and request notification permission
   onMount(async () => {
@@ -28,22 +70,23 @@
   });
 
   // Send notification to the server
-  const sendNotification = async () => {
-    if (!PushSubscription) {
-      alert("Please allow notifications to make sure that the application works.");
-      return;
-    };
+  // const sendNotification = async () => {
+  //   if (!PushSubscription) {
+  //     alert("Please allow notifications to make sure that the application works.");
+  //     return;
+  //   };
 
-    const res = await fetch("/api/notification", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json"
-      },
-      body: JSON.stringify(PushSubscription)
-    });
-    console.log(await res.json());
-  }
+  //   const res = await fetch("/api/notification", {
+  //     method: "POST",
+  //     headers: {
+  //       "Content-Type": "application/json"
+  //     },
+  //     body: JSON.stringify(PushSubscription)
+  //   });
+  //   console.log(await res.json());
+  // }
 
 </script>
-<h1>Click the button below to send a notification</h1>
-<button on:click={() => sendNotification()}>Send Notification</button>
+<h1>Create user</h1>
+<input type="text" bind:value={username}>
+<button on:click={createUser}>Create user</button>

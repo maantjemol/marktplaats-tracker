@@ -2,28 +2,45 @@ import { json } from '@sveltejs/kit';
 import webPush from 'web-push';
 import type { RequestEvent } from './$types';
 import { VAPID_CONTACT, VAPID_PRIVATE, VAPID_PUBLIC } from '$env/static/private';
+import { PrismaClient } from '@prisma/client';
 
 export async function POST({ request }: RequestEvent) {
 	webPush.setVapidDetails(VAPID_CONTACT, VAPID_PUBLIC, VAPID_PRIVATE);
 
-	const body: PushSubscriptionJSON = await request.json();
+	const body: { id: string } = await request.json();
+	const prisma = new PrismaClient();
 
-	if (!body.endpoint || !body.keys) {
-		return json({ ok: false });
+	if (body.id) {
+		const user = await prisma.marktplaats_users.findUnique({
+			where: {
+				id: Number(body.id)
+			}
+		});
+
+		if (!user) {
+			return json({ ok: false, error: 'User not found' });
+		}
+
+		const subscription = user.subscription as unknown as webPush.PushSubscription;
+
+		// Send notification
+		const result = await webPush.sendNotification(subscription, 'hello world');
+
+		console.log(result);
+
+		return json({ ok: true, result });
 	}
 
-	// Create subscription. You should store this and associate with user
-	const pushSubscription = {
-		endpoint: body.endpoint,
-		keys: {
-			p256dh: body.keys.p256dh,
-			auth: body.keys.auth
-		}
-	};
+	const users = await prisma.marktplaats_users.findMany();
 
-	// Send notification
-	const result = await webPush.sendNotification(pushSubscription, 'hello world');
-	console.log(result);
+	users.forEach(async (user) => {
+		const subscription = user.subscription as unknown as webPush.PushSubscription;
+
+		// Send notification
+		const result = await webPush.sendNotification(subscription, `hello world ${user.name}`);
+
+		console.log(result);
+	});
 
 	return json({ ok: true });
 }
